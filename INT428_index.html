@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameBot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='INT428_styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Memory Game Bot</h1>
+        <div class="user-info">
+            <p>Welcome, {{ username }}! <a href="{{ url_for('logout') }}">Logout</a></p>
+            <p>Games Played: <span id="games_played">{{ games_played }}</span></p>
+        </div>
+        
+        <div class="menu">
+            <h2>Choose a Game</h2>
+            <div class="button-group">
+                <button onclick="startGame('memory')">Memory Match</button>
+                <button onclick="startGame('number')">Number Guess</button>
+                <button onclick="startGame('scramble')">Word Scramble</button>
+            </div>
+        </div>
+
+        <div id="game-area" class="game-area hidden">
+            <h2 id="game-title"></h2>
+            <div id="game-content"></div>
+            <p id="message"></p>
+            <div class="game-controls">
+                <button id="next-move" onclick="nextMove()">Next Move</button>
+                <button id="reset-game" onclick="resetGame()">Reset Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameType;
+
+        function startGame(game) {
+            gameType = game;
+            fetch('/start_game', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'game=' + encodeURIComponent(game)
+            })
+            .then(response => response.text())
+            .then(html => {
+                updateGameArea(html);
+                document.getElementById('game-area').classList.remove('hidden');
+                document.getElementById('next-move').disabled = false;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function nextMove() {
+            fetch('/play', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: ''
+            })
+            .then(response => response.text())
+            .then(html => {
+                updateGameArea(html);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function resetGame() {
+            if (gameType) {
+                startGame(gameType);
+            }
+        }
+
+        function updateGameArea(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const gameContent = doc.querySelector('#game-content').innerHTML;
+            const gamesPlayed = doc.querySelector('#games-played').textContent;
+            const message = doc.querySelector('#message').textContent;
+            const complete = doc.querySelector('#complete').value;
+            const match = doc.querySelector('#game-update').getAttribute('data-match') === 'true';
+
+            document.getElementById('game-content').innerHTML = gameContent;
+            document.getElementById('games_played').textContent = gamesPlayed;
+            document.getElementById('message').textContent = message;
+
+            if (gameType === 'memory' && !match) {
+                setTimeout(() => {
+                    const cards = document.querySelectorAll('.card[data-revealed="temporary"]');
+                    cards.forEach(card => {
+                        card.textContent = '?';
+                        card.removeAttribute('data-revealed');
+                    });
+                }, 2000);
+            }
+
+            if (complete === 'true') {
+                document.getElementById('next-move').disabled = true;
+            }
+        }
+    </script>
+</body>
+</html>

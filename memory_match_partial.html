@@ -1,0 +1,8 @@
+<div class="board">
+    {% for pos, value in board %}
+        <div class="card" data-pos="{{ pos }}" data-value="{{ value }}"
+             {% if pos in revealed %}data-revealed="permanent"{% elif pos in temporarily_revealed %}data-revealed="temporary"{% endif %}>
+            {{ value if pos in revealed or pos in temporarily_revealed else '?' }}
+        </div>
+    {% endfor %}
+</div>
